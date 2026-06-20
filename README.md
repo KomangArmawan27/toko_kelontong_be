@@ -125,6 +125,37 @@ Or with Pest:
 
 ## API Documentation
 
+### User Roles
+
+- `shop_owner` - full access to every API and admin action
+- `shop_keeper` - can manage cash transactions and stock movements, and browse items read-only
+- `customer` - can browse active items and purchase them
+
+### Role Assignment Flow
+
+- New registrations always start as `customer`
+- A `shop_owner` can promote an existing user to `shop_keeper` or `shop_owner`
+- Role promotion is done through the API, not by editing the database directly
+
+**Update user role** (requires shop owner)
+```
+PATCH /api/users/{user}/role
+Authorization: Bearer <owner_token>
+Content-Type: application/json
+
+{
+  "role": "shop_keeper"
+}
+```
+
+Allowed values:
+- `shop_owner`
+- `shop_keeper`
+
+Notes:
+- A user cannot change their own role
+- The register endpoint still creates `customer` accounts by default
+
 ### Authentication Endpoints
 
 **Register a new user**
@@ -136,7 +167,7 @@ Content-Type: application/json
   "name": "John Doe",
   "email": "john@example.com",
   "password": "secret123",
-  "password_confirmation": "secret123"
+  "role": "customer"
 }
 ```
 
@@ -171,6 +202,8 @@ GET /api/items
 Authorization: Bearer <token>
 ```
 
+Customers only see active items and public fields. Shop owners and shop keepers can see the full item details.
+
 **Create item**
 ```
 POST /api/items
@@ -178,10 +211,14 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "name": "Item Name",
   "sku": "SKU123",
-  "price": 10000,
-  "quantity": 100
+  "name": "Item Name",
+  "description": "Optional description",
+  "unit": "pcs",
+  "purchase_price": 10000,
+  "selling_price": 12000,
+  "minimum_stock": 5,
+  "is_active": true
 }
 ```
 
@@ -203,6 +240,19 @@ DELETE /api/items/{id}
 Authorization: Bearer <token>
 ```
 
+**Purchase item**
+```
+POST /api/items/{id}/purchase
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "quantity": 2,
+  "transaction_date": "2026-06-20",
+  "notes": "Optional purchase note"
+}
+```
+
 ### Cash Transactions
 
 **List transactions**
@@ -211,6 +261,8 @@ GET /api/cash-transactions
 Authorization: Bearer <token>
 ```
 
+Shop owners and shop keepers can access cash transactions.
+
 **Create transaction**
 ```
 POST /api/cash-transactions
@@ -218,9 +270,10 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "type": "in|out",
+  "type": "cash_in|cash_out",
   "amount": 50000,
-  "description": "Transaction description"
+  "description": "Transaction description",
+  "transaction_date": "2026-06-20"
 }
 ```
 
@@ -250,6 +303,8 @@ GET /api/stock-movements
 Authorization: Bearer <token>
 ```
 
+Shop owners and shop keepers can access stock movements.
+
 **Create stock movement**
 ```
 POST /api/stock-movements
@@ -258,7 +313,7 @@ Content-Type: application/json
 
 {
   "item_id": 1,
-  "type": "in|out",
+  "type": "in|out|adjustment",
   "quantity": 50,
   "notes": "Movement notes"
 }
@@ -448,4 +503,4 @@ For issues, questions, or contributions, please open an issue or pull request in
 
 ---
 
-**Last Updated:** June 2, 2026
+**Last Updated:** June 20, 2026
