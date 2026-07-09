@@ -101,9 +101,21 @@ test('shop keepers can manage cash transactions and stock movements but not mast
         ->assertForbidden();
 });
 
-test('shop owner can promote a user to keeper or owner', function (): void {
+test('shop owner can list users and promote a user to keeper or owner', function (): void {
     $owner = User::factory()->shopOwner()->create();
     $candidate = User::factory()->customer()->create();
+
+    $listResponse = $this->withHeader('Authorization', 'Bearer '.bearerTokenFor($owner))
+        ->getJson('/api/users');
+
+    $listResponse->assertOk()
+        ->assertJsonCount(2, 'data')
+        ->assertJsonFragment([
+            'email' => $owner->email,
+        ])
+        ->assertJsonFragment([
+            'email' => $candidate->email,
+        ]);
 
     $response = $this->withHeader('Authorization', 'Bearer '.bearerTokenFor($owner))
         ->patchJson("/api/users/{$candidate->getKey()}/role", [
@@ -120,9 +132,13 @@ test('shop owner can promote a user to keeper or owner', function (): void {
     ]);
 });
 
-test('non owners cannot promote user roles', function (): void {
+test('non owners cannot view or promote user roles', function (): void {
     $keeper = User::factory()->shopKeeper()->create();
     $candidate = User::factory()->customer()->create();
+
+    $this->withHeader('Authorization', 'Bearer '.bearerTokenFor($keeper))
+        ->getJson('/api/users')
+        ->assertForbidden();
 
     $this->withHeader('Authorization', 'Bearer '.bearerTokenFor($keeper))
         ->patchJson("/api/users/{$candidate->getKey()}/role", [

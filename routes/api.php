@@ -22,6 +22,7 @@ Route::middleware('jwt')->group(function (): void {
     Route::post('items/{item}/purchase', [ItemController::class, 'purchase'])->middleware('role:shop_owner,customer');
 
     Route::middleware('role:shop_owner')->group(function (): void {
+        Route::get('users', [AuthController::class, 'indexUsers']);
         Route::post('items', [ItemController::class, 'store']);
         Route::match(['put', 'patch'], 'items/{item}', [ItemController::class, 'update']);
         Route::delete('items/{item}', [ItemController::class, 'destroy']);

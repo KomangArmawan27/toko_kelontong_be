@@ -62,6 +62,16 @@ class AuthController extends Controller
         return response()->json(['user' => $request->user()]);
     }
 
+    public function indexUsers(Request $request): JsonResponse
+    {
+        $users = User::query()
+            ->select(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
+            ->orderBy('name')
+            ->paginate(20);
+
+        return response()->json($users);
+    }
+
     public function updateRole(Request $request, User $user): JsonResponse
     {
         if ($request->user()->is($user)) {
